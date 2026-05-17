@@ -1,121 +1,364 @@
-import React from "react";
+import { useMemo, useState } from "react";
+import "./App.css";
 
-export default function ShopeeCalculator() {
-  const calculatePrice = (desired) => {
-    const value = parseFloat(desired);
+function formatMoney(value) {
+  if (Number.isNaN(value) || !Number.isFinite(value)) return "R$ 0,00";
 
-    if (!value || value <= 0) {
-      return { price: "-", fee: "-", rule: "-" };
-    }
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
-    let finalPrice = 0;
-    let fee = 0;
-    let rule = "";
+function parseNumber(value) {
+  const cleaned = String(value)
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.]/g, "");
 
-    // Até R$8 → 50%
-    const faixa1 = value / 0.5;
+  return Number(cleaned) || 0;
+}
 
-    if (faixa1 <= 8) {
-      finalPrice = faixa1;
-      fee = finalPrice * 0.5;
-      rule = "50% de comissão";
-    } else {
-      // Até R$79 → 20% + R$4
-      const faixa2 = (value + 4) / 0.8;
+function calcularTaxasShopee(valorProduto) {
+  if (valorProduto <= 0) {
+    return {
+      percentual: 0,
+      comissao: 0,
+      tarifaFixa: 0,
+      totalTaxas: 0,
+      subsidioPixPercentual: 0,
+      subsidioPix: 0,
+      regraAplicada: "-",
+    };
+  }
 
-      if (faixa2 <= 79) {
-        finalPrice = faixa2;
-        fee = finalPrice * 0.2 + 4;
-        rule = "20% + R$4";
-      } else {
-        // Até R$99,99 → 14% + R$16
-        const faixa3 = (value + 16) / 0.86;
-
-        finalPrice = faixa3;
-        fee = finalPrice * 0.14 + 16;
-        rule = "14% + R$16";
-      }
-    }
+  // Regra especial: até R$ 8,00 cobra metade do valor do produto
+  if (valorProduto <= 8) {
+    const tarifaFixa = valorProduto / 2;
 
     return {
-      price: finalPrice.toFixed(2),
-      fee: fee.toFixed(2),
-      rule,
+      percentual: 0,
+      comissao: 0,
+      tarifaFixa,
+      totalTaxas: tarifaFixa,
+      subsidioPixPercentual: 0,
+      subsidioPix: 0,
+      regraAplicada:
+        "Produto até R$ 8,00: tarifa fixa equivalente à metade do valor do produto.",
     };
-  };
+  }
 
-  const [desiredValue, setDesiredValue] = React.useState("");
-  const result = calculatePrice(desiredValue);
+  // A partir de R$ 8,01 até R$ 79,99
+  if (valorProduto <= 79.99) {
+    const comissao = valorProduto * 0.2;
+    const tarifaFixa = 4;
+
+    return {
+      percentual: 20,
+      comissao,
+      tarifaFixa,
+      totalTaxas: comissao + tarifaFixa,
+      subsidioPixPercentual: 0,
+      subsidioPix: 0,
+      regraAplicada: "De R$ 8,01 até R$ 79,99: comissão de 20% + R$ 4,00.",
+    };
+  }
+
+  if (valorProduto <= 99.99) {
+    const comissao = valorProduto * 0.14;
+    const tarifaFixa = 16;
+    const subsidioPix = valorProduto * 0.05;
+
+    return {
+      percentual: 14,
+      comissao,
+      tarifaFixa,
+      totalTaxas: comissao + tarifaFixa,
+      subsidioPixPercentual: 5,
+      subsidioPix,
+      regraAplicada:
+        "De R$ 80,00 até R$ 99,99: comissão de 14% + R$ 16,00. Subsídio Pix informado: 5%.",
+    };
+  }
+
+  if (valorProduto <= 199.99) {
+    const comissao = valorProduto * 0.14;
+    const tarifaFixa = 20;
+    const subsidioPix = valorProduto * 0.05;
+
+    return {
+      percentual: 14,
+      comissao,
+      tarifaFixa,
+      totalTaxas: comissao + tarifaFixa,
+      subsidioPixPercentual: 5,
+      subsidioPix,
+      regraAplicada:
+        "De R$ 100,00 até R$ 199,99: comissão de 14% + R$ 20,00. Subsídio Pix informado: 5%.",
+    };
+  }
+
+  if (valorProduto <= 499.99) {
+    const comissao = valorProduto * 0.14;
+    const tarifaFixa = 26;
+    const subsidioPix = valorProduto * 0.05;
+
+    return {
+      percentual: 14,
+      comissao,
+      tarifaFixa,
+      totalTaxas: comissao + tarifaFixa,
+      subsidioPixPercentual: 5,
+      subsidioPix,
+      regraAplicada:
+        "De R$ 200,00 até R$ 499,99: comissão de 14% + R$ 26,00. Subsídio Pix informado: 5%.",
+    };
+  }
+
+  const comissao = valorProduto * 0.14;
+  const tarifaFixa = 26;
+  const subsidioPix = valorProduto * 0.08;
+
+  return {
+    percentual: 14,
+    comissao,
+    tarifaFixa,
+    totalTaxas: comissao + tarifaFixa,
+    subsidioPixPercentual: 8,
+    subsidioPix,
+    regraAplicada:
+      "Acima de R$ 500,00: comissão de 14% + R$ 26,00. Subsídio Pix informado: 8%.",
+  };
+}
+
+function calcularPrecoSugerido(custoTotal, margemDesejada) {
+  if (custoTotal <= 0 || margemDesejada <= 0) return 0;
+
+  const lucroDesejado = custoTotal * (margemDesejada / 100);
+  const valorLiquidoDesejado = custoTotal + lucroDesejado;
+
+  for (let preco = 0.01; preco <= 10000; preco += 0.01) {
+    const taxas = calcularTaxasShopee(preco);
+    const liquido = preco - taxas.totalTaxas;
+
+    if (liquido >= valorLiquidoDesejado) {
+      return preco;
+    }
+  }
+
+  return 0;
+}
+
+export default function App() {
+  const [valorProduto, setValorProduto] = useState("");
+  const [custoProduto, setCustoProduto] = useState("");
+  const [embalagem, setEmbalagem] = useState("");
+  const [margemDesejada, setMargemDesejada] = useState("");
+
+  const resultado = useMemo(() => {
+    const produto = parseNumber(valorProduto);
+    const custo = parseNumber(custoProduto);
+    const custoEmbalagem = parseNumber(embalagem);
+    const margem = parseNumber(margemDesejada);
+
+    const taxasShopee = calcularTaxasShopee(produto);
+
+    const comissaoShopee = taxasShopee.comissao;
+    const tarifaFixa = taxasShopee.tarifaFixa;
+    const totalTaxas = taxasShopee.totalTaxas;
+    const valorLiquido = produto - totalTaxas;
+
+    const custoTotal = custo + custoEmbalagem;
+    const lucroFinal = valorLiquido - custoTotal;
+
+    const precoSugerido = calcularPrecoSugerido(custoTotal, margem);
+
+    const taxasPrecoSugerido = calcularTaxasShopee(precoSugerido);
+    const liquidoPrecoSugerido = precoSugerido - taxasPrecoSugerido.totalTaxas;
+    const lucroPrecoSugerido = liquidoPrecoSugerido - custoTotal;
+
+    return {
+      produto,
+      comissaoShopee,
+      tarifaFixa,
+      totalTaxas,
+      valorLiquido,
+      custoTotal,
+      lucroFinal,
+      precoSugerido,
+      liquidoPrecoSugerido,
+      lucroPrecoSugerido,
+      subsidioPixPercentual: taxasShopee.subsidioPixPercentual,
+      subsidioPix: taxasShopee.subsidioPix,
+      regraAplicada: taxasShopee.regraAplicada,
+      regraPrecoSugerido: taxasPrecoSugerido.regraAplicada,
+    };
+  }, [valorProduto, custoProduto, embalagem, margemDesejada]);
+
+  function limparCampos() {
+    setValorProduto("");
+    setCustoProduto("");
+    setEmbalagem("");
+    setMargemDesejada("");
+  }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f4f4f5",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "20px",
-        fontFamily: "Arial",
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          padding: "25px",
-          borderRadius: "20px",
-          width: "100%",
-          maxWidth: "400px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-        }}
-      >
-        <h1 style={{ fontSize: "28px", marginBottom: "10px" }}>
-          Calculadora Shopee
-        </h1>
+    <main className="page">
+      <section className="calculator-card">
+        <div className="header">
+          <p className="badge">WL Studio 3D</p>
 
-        <p style={{ color: "#666", marginBottom: "20px" }}>
-          Digite quanto deseja receber:
-        </p>
+          <h1>Calculadora Shopee</h1>
 
-        <input
-          type="number"
-          placeholder="0.00"
-          value={desiredValue}
-          onChange={(e) => setDesiredValue(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "15px",
-            fontSize: "20px",
-            borderRadius: "12px",
-            border: "1px solid #ccc",
-            marginBottom: "20px",
-            boxSizing: "border-box",
-          }}
-        />
-
-        <div
-          style={{
-            background: "#fff7ed",
-            padding: "20px",
-            borderRadius: "15px",
-          }}
-        >
-          <p style={{ color: "#666" }}>Preço ideal na Shopee</p>
-
-          <h2 style={{ fontSize: "36px", color: "#ea580c" }}>
-            {result.price === "-" ? "-" : `R$ ${result.price}`}
-          </h2>
-
-          <p style={{ marginTop: "10px" }}>
-            <strong>Taxas:</strong>{" "}
-            {result.fee === "-" ? "-" : `R$ ${result.fee}`}
-          </p>
-
-          <p>
-            <strong>Regra:</strong> {result.rule}
+          <p className="subtitle">
+            Calcule quanto a Shopee desconta, o valor líquido que você recebe e
+            simule um preço ideal com base no custo e na margem desejada.
           </p>
         </div>
-      </div>
-    </div>
+
+        <div className="form-group">
+          <label>Valor do Produto</label>
+
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="Ex: 59,90"
+            value={valorProduto}
+            onChange={(e) => setValorProduto(e.target.value)}
+          />
+        </div>
+
+        <div className="result-box primary">
+          <p className="result-label">Valor líquido que irá receber</p>
+          <strong>{formatMoney(resultado.valorLiquido)}</strong>
+        </div>
+
+        <div className="fees-box">
+          <div>
+            <span>Comissão Shopee</span>
+            <strong>{formatMoney(resultado.comissaoShopee)}</strong>
+          </div>
+
+          <div>
+            <span>Tarifa fixa</span>
+            <strong>{formatMoney(resultado.tarifaFixa)}</strong>
+          </div>
+
+          <div className="total">
+            <span>Total das taxas Shopee</span>
+            <strong>{formatMoney(resultado.totalTaxas)}</strong>
+          </div>
+
+          <div>
+            <span>Subsídio Pix informado</span>
+            <strong>
+              {resultado.subsidioPixPercentual > 0
+                ? `${resultado.subsidioPixPercentual}% | ${formatMoney(
+                    resultado.subsidioPix
+                  )}`
+                : "-"}
+            </strong>
+          </div>
+        </div>
+
+        <div className="rule-box">
+          <span>Regra aplicada</span>
+          <p>{resultado.regraAplicada}</p>
+        </div>
+
+        <div className="divider" />
+
+        <h2>Teste de Precificação</h2>
+
+        <div className="grid">
+          <div className="form-group">
+            <label>Custo do produto</label>
+
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="Ex: 18,00"
+              value={custoProduto}
+              onChange={(e) => setCustoProduto(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Embalagem</label>
+
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="Ex: 2,50"
+              value={embalagem}
+              onChange={(e) => setEmbalagem(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Margem desejada (%)</label>
+
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="Ex: 40"
+              value={margemDesejada}
+              onChange={(e) => setMargemDesejada(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="summary">
+          <div>
+            <span>Custo total</span>
+            <strong>{formatMoney(resultado.custoTotal)}</strong>
+          </div>
+
+          <div>
+            <span>Lucro final no valor atual</span>
+            <strong
+              className={resultado.lucroFinal >= 0 ? "positive" : "negative"}
+            >
+              {formatMoney(resultado.lucroFinal)}
+            </strong>
+          </div>
+
+          <div className="highlight">
+            <span>Preço sugerido para anúncio</span>
+            <strong>{formatMoney(resultado.precoSugerido)}</strong>
+          </div>
+
+          <div>
+            <span>Líquido no preço sugerido</span>
+            <strong>{formatMoney(resultado.liquidoPrecoSugerido)}</strong>
+          </div>
+
+          <div>
+            <span>Lucro estimado no preço sugerido</span>
+            <strong
+              className={
+                resultado.lucroPrecoSugerido >= 0 ? "positive" : "negative"
+              }
+            >
+              {formatMoney(resultado.lucroPrecoSugerido)}
+            </strong>
+          </div>
+        </div>
+
+        <div className="rule-box">
+          <span>Regra aplicada no preço sugerido</span>
+          <p>{resultado.regraPrecoSugerido}</p>
+        </div>
+
+        <button className="clear-button" onClick={limparCampos}>
+          Limpar cálculo
+        </button>
+
+        <p className="warning">
+          Cálculo feito com base na tabela CNPJ informada. O Subsídio Pix está
+          sendo exibido separadamente e não foi somado ao total das taxas.
+        </p>
+      </section>
+    </main>
   );
 }
