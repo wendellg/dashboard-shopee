@@ -32,7 +32,6 @@ function calcularTaxasShopee(valorProduto) {
     };
   }
 
-  // Regra especial: até R$ 8,00 cobra metade do valor do produto
   if (valorProduto <= 8) {
     const tarifaFixa = valorProduto / 2;
 
@@ -48,7 +47,6 @@ function calcularTaxasShopee(valorProduto) {
     };
   }
 
-  // A partir de R$ 8,01 até R$ 79,99
   if (valorProduto <= 79.99) {
     const comissao = valorProduto * 0.2;
     const tarifaFixa = 4;
@@ -172,13 +170,11 @@ export default function App() {
     const lucroFinal = valorLiquido - custoTotal;
 
     const precoSugerido = calcularPrecoSugerido(custoTotal, margem);
-
     const taxasPrecoSugerido = calcularTaxasShopee(precoSugerido);
     const liquidoPrecoSugerido = precoSugerido - taxasPrecoSugerido.totalTaxas;
     const lucroPrecoSugerido = liquidoPrecoSugerido - custoTotal;
 
     return {
-      produto,
       comissaoShopee,
       tarifaFixa,
       totalTaxas,
@@ -191,7 +187,6 @@ export default function App() {
       subsidioPixPercentual: taxasShopee.subsidioPixPercentual,
       subsidioPix: taxasShopee.subsidioPix,
       regraAplicada: taxasShopee.regraAplicada,
-      regraPrecoSugerido: taxasPrecoSugerido.regraAplicada,
     };
   }, [valorProduto, custoProduto, embalagem, margemDesejada]);
 
@@ -204,7 +199,7 @@ export default function App() {
 
   return (
     <main className="page">
-      <section className="calculator-card">
+      <section className="calculator-card main-card">
         <div className="header">
           <p className="badge">WL Studio 3D</p>
 
@@ -265,10 +260,19 @@ export default function App() {
           <span>Regra aplicada</span>
           <p>{resultado.regraAplicada}</p>
         </div>
+      </section>
 
-        <div className="divider" />
+      <section className="calculator-card pricing-card">
+        <div className="pricing-header">
+          <span className="section-tag">Simulação</span>
 
-        <h2>Teste de Precificação</h2>
+          <h2>Teste de Precificação</h2>
+
+          <p>
+            Preencha o custo, embalagem e margem para calcular o preço ideal de
+            venda.
+          </p>
+        </div>
 
         <div className="grid">
           <div className="form-group">
@@ -314,7 +318,7 @@ export default function App() {
             <strong>{formatMoney(resultado.custoTotal)}</strong>
           </div>
 
-          <div>
+          <div className="profit-current">
             <span>Lucro final no valor atual</span>
             <strong
               className={resultado.lucroFinal >= 0 ? "positive" : "negative"}
@@ -323,7 +327,7 @@ export default function App() {
             </strong>
           </div>
 
-          <div className="highlight">
+          <div className="price-suggested">
             <span>Preço sugerido para anúncio</span>
             <strong>{formatMoney(resultado.precoSugerido)}</strong>
           </div>
@@ -333,7 +337,7 @@ export default function App() {
             <strong>{formatMoney(resultado.liquidoPrecoSugerido)}</strong>
           </div>
 
-          <div>
+          <div className="profit-suggested">
             <span>Lucro estimado no preço sugerido</span>
             <strong
               className={
@@ -345,19 +349,16 @@ export default function App() {
           </div>
         </div>
 
-        <div className="rule-box">
-          <span>Regra aplicada no preço sugerido</span>
-          <p>{resultado.regraPrecoSugerido}</p>
+        <div className="pricing-footer">
+          <button className="clear-button" onClick={limparCampos}>
+            Limpar cálculo
+          </button>
+
+          <p className="warning">
+            Cálculo feito com base na tabela CNPJ informada. O Subsídio Pix está
+            sendo exibido separadamente e não foi somado ao total das taxas.
+          </p>
         </div>
-
-        <button className="clear-button" onClick={limparCampos}>
-          Limpar cálculo
-        </button>
-
-        <p className="warning">
-          Cálculo feito com base na tabela CNPJ informada. O Subsídio Pix está
-          sendo exibido separadamente e não foi somado ao total das taxas.
-        </p>
       </section>
     </main>
   );

@@ -2,8 +2,16 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   margin: 0;
+  overflow: hidden;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   background: #f4f5f7;
@@ -16,79 +24,113 @@ input {
 }
 
 .page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 16px;
+  width: 100%;
+  height: 100vh;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(520px, 1.2fr) minmax(360px, 0.8fr);
+  gap: 16px;
+  align-items: stretch;
 }
 
 .calculator-card {
   width: 100%;
-  max-width: 620px;
+  height: 100%;
+  min-height: 0;
   background: #ffffff;
-  border-radius: 28px;
-  padding: 32px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.12);
+  border-radius: 26px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-card {
+  padding: 28px 32px;
+}
+
+.pricing-card {
+  padding: 24px 28px;
 }
 
 .header {
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
-.badge {
+.badge,
+.section-tag {
   display: inline-flex;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   padding: 6px 12px;
   border-radius: 999px;
   background: #fff1e8;
   color: #ee4d2d;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 h1 {
   margin: 0;
   font-size: 34px;
+  line-height: 1.05;
   letter-spacing: -0.04em;
 }
 
 .subtitle {
   margin: 10px 0 0;
   color: #667085;
-  line-height: 1.5;
+  line-height: 1.45;
+  font-size: 15px;
+  max-width: 720px;
 }
 
-h2 {
-  margin: 0 0 18px;
-  font-size: 22px;
-  letter-spacing: -0.03em;
+.pricing-header {
+  margin-bottom: 16px;
+}
+
+.pricing-header h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.pricing-header p {
+  margin: 8px 0 0;
+  color: #667085;
+  line-height: 1.4;
+  font-size: 14px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: 7px;
+  margin-bottom: 12px;
 }
 
 label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: #344054;
 }
 
 input {
   width: 100%;
-  height: 58px;
+  height: 50px;
   border: 1px solid #d0d5dd;
-  border-radius: 16px;
-  padding: 0 18px;
-  font-size: 20px;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-size: 18px;
   outline: none;
   transition: 0.2s;
   background: #ffffff;
   color: #101828;
+}
+
+.main-card input {
+  height: 54px;
+  font-size: 19px;
 }
 
 input::placeholder {
@@ -102,30 +144,31 @@ input:focus {
 
 .result-box {
   border-radius: 22px;
-  padding: 22px;
-  margin: 22px 0;
+  padding: 20px 22px;
+  margin: 12px 0 14px;
 }
 
 .result-box.primary {
-  background: linear-gradient(135deg, #ee4d2d, #ff7a45);
+  background: linear-gradient(135deg, #ee4d2d, #ff6b3d);
   color: white;
 }
 
 .result-label {
   margin: 0 0 8px;
-  font-size: 15px;
-  opacity: 0.9;
+  font-size: 14px;
+  opacity: 0.92;
 }
 
 .result-box strong {
   font-size: 34px;
+  line-height: 1;
   letter-spacing: -0.04em;
 }
 
 .fees-box,
 .summary {
   display: grid;
-  gap: 12px;
+  gap: 9px;
 }
 
 .fees-box div,
@@ -133,27 +176,26 @@ input:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 16px;
+  gap: 14px;
+  padding: 13px 15px;
+  border-radius: 15px;
   background: #f9fafb;
 }
 
 .fees-box span,
 .summary span {
   color: #667085;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .fees-box strong,
 .summary strong {
   text-align: right;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .fees-box .total {
   background: #fff7ed;
-  color: #111827;
   border: 1px solid #fed7aa;
 }
 
@@ -162,49 +204,78 @@ input:focus {
   font-size: 17px;
 }
 
-.summary .highlight {
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+.summary .profit-current {
+  background: linear-gradient(135deg, #ecfdf3, #f6fef9);
+  border: 1px solid #abefc6;
+  padding: 15px;
 }
 
-.summary .highlight strong {
-  color: #ee4d2d;
+.summary .profit-current span,
+.summary .profit-suggested span {
+  color: #027a48;
+  font-weight: 800;
+}
+
+.summary .profit-current strong,
+.summary .profit-suggested strong {
   font-size: 18px;
 }
 
+.summary .price-suggested {
+  margin-top: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 17px 15px;
+}
+
+.summary .price-suggested span {
+  color: #c2410c;
+  font-weight: 800;
+}
+
+.summary .price-suggested strong {
+  color: #ee4d2d;
+  font-size: 21px;
+  letter-spacing: -0.03em;
+}
+
+.summary .profit-suggested {
+  background: linear-gradient(135deg, #ecfdf3, #f6fef9);
+  border: 1px solid #abefc6;
+  padding: 15px;
+}
+
 .rule-box {
-  margin-top: 14px;
-  padding: 16px;
-  border-radius: 16px;
+  margin-top: auto;
+  padding: 15px;
+  border-radius: 15px;
   background: #f2f4f7;
   border: 1px solid #eaecf0;
 }
 
 .rule-box span {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   color: #667085;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .rule-box p {
   margin: 0;
   color: #344054;
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.divider {
-  height: 1px;
-  background: #eaecf0;
-  margin: 28px 0;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
+}
+
+.pricing-footer {
+  margin-top: auto;
 }
 
 .positive {
@@ -217,15 +288,15 @@ input:focus {
 
 .clear-button {
   width: 100%;
-  height: 54px;
+  height: 48px;
   border: none;
-  border-radius: 16px;
+  border-radius: 15px;
   background: #111827;
   color: white;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: 14px;
   transition: 0.2s;
 }
 
@@ -235,20 +306,53 @@ input:focus {
 }
 
 .warning {
-  margin: 18px 0 0;
+  margin: 12px 0 0;
   color: #98a2b3;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.35;
   text-align: center;
+}
+
+/* Telas menores: libera rolagem só quando realmente precisar */
+@media (max-width: 980px) {
+  body {
+    overflow: auto;
+  }
+
+  .page {
+    height: auto;
+    min-height: 100vh;
+    grid-template-columns: 1fr;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 12px;
+  }
+
+  .calculator-card {
+    height: auto;
+    overflow: visible;
+  }
+
+  .main-card,
+  .pricing-card {
+    padding: 24px;
+  }
+
+  .rule-box,
+  .pricing-footer {
+    margin-top: 16px;
+  }
 }
 
 @media (max-width: 520px) {
   .page {
-    padding: 18px 12px;
+    padding: 12px;
+    gap: 12px;
   }
 
-  .calculator-card {
-    padding: 24px;
+  .main-card,
+  .pricing-card {
+    padding: 22px;
     border-radius: 22px;
   }
 
@@ -256,19 +360,20 @@ input:focus {
     font-size: 28px;
   }
 
-  h2 {
-    font-size: 20px;
+  .pricing-header h2 {
+    font-size: 24px;
   }
 
-  .result-box strong {
-    font-size: 28px;
+  .subtitle,
+  .pricing-header p {
+    font-size: 13px;
   }
 
   .fees-box div,
   .summary div {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    gap: 5px;
   }
 
   .fees-box strong,
